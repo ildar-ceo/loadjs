@@ -7,7 +7,13 @@
 */
 var $ldjs={
 	
-	debug: false,
+	/*
+		Степень отладки
+			0 - ничего не выводить
+			1 - выводить deliver
+			2 - выводить deliver + load
+	*/
+	debug: 0,
 	
 	/*
 		Статус загружаемых файлов
@@ -29,10 +35,10 @@ var $ldjs={
 	],
 	
 	/*
-		Функция срабатывает, когда файл загружен
+		Функция срабатывает, когда файл url загружен
 	*/
 	onLdd: function(url){
-		if ($ldjs.debug) console.log('[load] ' + url);
+		if ($ldjs.debug >= 2) console.log('[load] ' + url);
 		
 		url = url.split('?').shift();
 		$ldjs.st[url]=2;
@@ -61,7 +67,49 @@ var $ldjs={
 				obj.onAllLoaded();
 			}
 		}
-	}
+	},
+	
+	/*
+		Объект с событиями и callback функциями
+	*/
+	ev:{},
+	
+	/*
+		Таблица состояний
+	*/
+	ev_st:{},
+	
+	/*
+		Функция, подписывающее на событие
+	*/
+	subscribe: function(event, func){
+		if (typeof event == 'array' || typeof event == 'object') event = event.join(',');
+		if (typeof $ldjs.ev[event] == 'undefined') $ldjs.ev[event] = [];
+		$ldjs.ev[event].push(func);
+	},
+	
+	/*
+		Функция, callback для события
+	*/
+	deliver: function(event, params){
+		if ($ldjs.debug >= 1) console.log('[deliver] ' + event);
+		$ldjs.ev_st[event] = 1;
+		for (var z in $ldjs.ev){
+			var arr = z.split(',');
+			var flag = true;
+			for (var i=0;i<arr.length;i++){
+				var x = arr[i];
+				if (typeof $ldjs.ev_st[x] == 'undefined'){flag = false; break;}
+				if ($ldjs.ev_st[x] != 1){flag = false; break;}
+			}
+			if (flag && arr.indexOf(event) != -1){
+				for (var i in $ldjs.ev[z]){
+					$ldjs.ev[z][i](params);
+				}
+			}
+		}
+	},
+	
 };
 function onLoad(arr){return load(arr, 2);}
 function load(arr, runExecute){
@@ -69,7 +117,7 @@ function load(arr, runExecute){
 		runExecute
 		0 - не запускать, подождать вызова функции next
 		1 - сразу запустить
-		2 - отслеживать загрухку файлов и когда они загружены запустить success
+		2 - отслеживать загрузку файлов и когда они загружены запустить success
 	*/
 	if (typeof runExecute == 'undefined') runExecute = 1;
 	
@@ -90,22 +138,24 @@ function load(arr, runExecute){
 	
 	var arr2=[];
 	
-	function bindFuncSuccess(obj){
+	obj.success=(function (obj){
 		return function(func){
 			obj.callbackSuccess = func;
 			return obj;
 		}
-	}
-	obj.success=bindFuncSuccess(obj);
-	function bindFuncLoad(obj){
+	})(obj);
+	
+	obj.load=(function (obj){
 		return function(arr){
 			obj.next = load(arr,0);
 			return obj.next;
 		}
-	}		
-	obj.load=bindFuncLoad(obj);
+	})(obj);
 	
-	function bindFuncExecute(obj){
+	/*
+		Запускает загрузку следующих файлов в цепочке
+	*/
+	obj.execute=(function (obj){
 		return function(){
 			if (obj.count > 0){
 				for(var i in obj.f){
@@ -116,17 +166,9 @@ function load(arr, runExecute){
 				obj.onAllLoaded();
 			}
 		}
-	}		
-	obj.execute=bindFuncExecute(obj);
+	})(obj);
 	
-	function bindonLdd(url,status){
-		return function(){
-			if (status == 'success'){
-				$ldjs.onLdd(url);
-			}
-		};
-	}
-	function bindOnAllLoaded(obj){
+	obj.onAllLoaded = (function(obj){
 		return function(){
 			/* 
 				Эта функция вызовется, когда весь arr будет загружен.
@@ -135,8 +177,7 @@ function load(arr, runExecute){
 			if (obj.callbackSuccess != null) obj.callbackSuccess();
 			if (obj.next != null) if(obj.next.execute != null) obj.next.execute(); // Запустить следующую цепочку
 		}
-	}
-	obj.onAllLoaded = bindOnAllLoaded(obj);
+	})(obj);
 	
 	if (runExecute == 2){
 		var flag = true;
@@ -157,12 +198,14 @@ function load(arr, runExecute){
 			});
 		}
 		else{
-			function bindExec(obj){
-				return function(){
-					obj.onAllLoaded();
-				}
-			}
-			setTimeout(bindExec(obj), 1);
+			setTimeout(
+				(function(obj){
+					return function(){
+						obj.onAllLoaded();
+					}
+				})(obj), 
+				1
+			);
 		}
 		return obj;
 	}
@@ -192,8 +235,19 @@ function load(arr, runExecute){
 			obj.count++;
 		}
 		if (f){
-			f.onload = bindonLdd(url,'success');
-			f.onerror = bindonLdd(url,'error');
+			f.onload = (function(url,status){
+				return function(){
+					if (status == 'success'){
+						$ldjs.onLdd(url); // Вызываем функцию успешной загрузки скрипта
+					}
+				};
+			})(url,'success');
+			
+			f.onerror = (function(url,status){
+				return function(){
+				};
+			})(url,'error');
+			
 			obj.f.push(f);
 			
 			$ldjs.st[url2]=1;
@@ -217,4 +271,7 @@ function load(arr, runExecute){
 	}
 	
 	return obj;
-}
+}		
+function onJQueryLoad(func){$ldjs.subscribe('jquery_loaded', func);}
+function onScriptsLoad(func){$ldjs.subscribe('scripts_loaded', func);}
+function onDocumentLoad(func){$ldjs.subscribe('document_loaded', func);}
