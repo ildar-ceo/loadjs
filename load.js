@@ -64,7 +64,7 @@ var $ldjs={
 			if (flag){
 				var obj = cl.obj;
 				$ldjs.cl.splice(i, 1);
-				obj.onAllLoaded();
+				obj.ald();
 			}
 		}
 	},
@@ -83,15 +83,33 @@ var $ldjs={
 		Функция, подписывающее на событие
 	*/
 	subscribe: function(event, func){
-		if (typeof event == 'array' || typeof event == 'object') event = event.join(',');
-		if (typeof $ldjs.ev[event] == 'undefined') $ldjs.ev[event] = [];
-		$ldjs.ev[event].push(func);
+		var arr = event;
+		if (typeof event == 'string'){
+			arr = event.split(',');
+		}
+		var flag = true;
+		for (var i=0;i<arr.length;i++){
+			var x = arr[i];
+			if (typeof $ldjs.ev_st[x] == 'undefined'){flag = false; break;}
+			if ($ldjs.ev_st[x] != 1){flag = false; break;}
+		}
+		if (flag){
+			func();
+		}
+		else{
+			if (typeof event == 'array' || typeof event == 'object') event = event.join(',');
+			if (typeof $ldjs.ev[event] == 'undefined') $ldjs.ev[event] = [];
+			$ldjs.ev[event].push(func);
+		}
 	},
 	
 	/*
 		Функция, callback для события
 	*/
 	deliver: function(event, params){
+		if (typeof $ldjs.ev_st[event] != 'undefined')
+			if ($ldjs.ev_st[event] == 1)
+				return;
 		if ($ldjs.debug >= 1) console.log('[deliver] ' + event);
 		$ldjs.ev_st[event] = 1;
 		for (var z in $ldjs.ev){
@@ -110,12 +128,17 @@ var $ldjs={
 		}
 	},
 	
+	deliver_forced: function(event, params){
+		$ldjs.ev_st[event] = 0;
+		$ldjs.deliver(event, params);
+		$ldjs.ev_st[event] = 0;
+	},
 };
 function onLoad(arr){return load(arr, 2);}
 function load(arr, runExecute){
 	/*
 		runExecute
-		0 - не запускать, подождать вызова функции next
+		0 - не запускать, подождать вызова функции nxt
 		1 - сразу запустить
 		2 - отслеживать загрузку файлов и когда они загружены запустить success
 	*/
@@ -131,24 +154,24 @@ function load(arr, runExecute){
 		load:null,
 		execute: null,
 		
-		next:null, // следующая load функция на запуск
-		callbackSuccess:null, // callback функция успешной загрзуки всех файлов
-		onAllLoaded:null,
+		nxt:null, // следующая load функция на запуск
+		clbs:null, // callback функция успешной загрзуки всех файлов
+		ald:null,
 	};
 	
 	var arr2=[];
 	
 	obj.success=(function (obj){
 		return function(func){
-			obj.callbackSuccess = func;
+			obj.clbs = func;
 			return obj;
 		}
 	})(obj);
 	
 	obj.load=(function (obj){
 		return function(arr){
-			obj.next = load(arr,0);
-			return obj.next;
+			obj.nxt = load(arr,0);
+			return obj.nxt;
 		}
 	})(obj);
 	
@@ -163,19 +186,19 @@ function load(arr, runExecute){
 				}
 			}
 			else{
-				obj.onAllLoaded();
+				obj.ald();
 			}
 		}
 	})(obj);
 	
-	obj.onAllLoaded = (function(obj){
+	obj.ald = (function(obj){
 		return function(){
 			/* 
 				Эта функция вызовется, когда весь arr будет загружен.
 				Она должна запустить следующий load
 			*/
-			if (obj.callbackSuccess != null) obj.callbackSuccess();
-			if (obj.next != null) if(obj.next.execute != null) obj.next.execute(); // Запустить следующую цепочку
+			if (obj.clbs != null) obj.clbs();
+			if (obj.nxt != null) if(obj.nxt.execute != null) obj.nxt.execute(); // Запустить следующую цепочку
 		}
 	})(obj);
 	
@@ -201,7 +224,7 @@ function load(arr, runExecute){
 			setTimeout(
 				(function(obj){
 					return function(){
-						obj.onAllLoaded();
+						obj.ald();
 					}
 				})(obj), 
 				1
