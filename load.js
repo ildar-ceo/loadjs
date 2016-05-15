@@ -133,168 +133,181 @@ var $ldjs={
 		$ldjs.deliver(event, params);
 		$ldjs.ev_st[event] = 0;
 	},
-};
-function onLoad(arr){return load(arr, 2);}
-function load(arr, runExecute){
-	/*
-		runExecute
-		0 - не запускать, подождать вызова функции nxt
-		1 - сразу запустить
-		2 - отслеживать загрузку файлов и когда они загружены запустить success
-	*/
-	if (typeof runExecute == 'undefined') runExecute = 1;
 	
-	var obj={
-		arr:arr,
-		f:[],
-		head:document.getElementsByTagName('head')[0] || document.documentElement,
-		count:0,
+	_load: function (arr, runExecute){
+		/*
+			runExecute
+			0 - не запускать, подождать вызова функции nxt
+			1 - сразу запустить
+			2 - отслеживать загрузку файлов и когда они загружены запустить success
+		*/
+		if (typeof runExecute == 'undefined') runExecute = 1;
 		
-		success:null,
-		load:null,
-		execute: null,
+		var obj={
+			arr:arr,
+			f:[],
+			head:document.getElementsByTagName('head')[0] || document.documentElement,
+			count:0,
+			
+			success:null,
+			load:null,
+			execute: null,
+			
+			nxt:null, // следующая load функция на запуск
+			clbs:null, // callback функция успешной загрзуки всех файлов
+			ald:null,
+		};
 		
-		nxt:null, // следующая load функция на запуск
-		clbs:null, // callback функция успешной загрзуки всех файлов
-		ald:null,
-	};
-	
-	var arr2=[];
-	
-	obj.success=(function (obj){
-		return function(func){
-			obj.clbs = func;
-			return obj;
-		}
-	})(obj);
-	
-	obj.load=(function (obj){
-		return function(arr){
-			obj.nxt = load(arr,0);
-			return obj.nxt;
-		}
-	})(obj);
-	
-	/*
-		Запускает загрузку следующих файлов в цепочке
-	*/
-	obj.execute=(function (obj){
-		return function(){
-			if (obj.count > 0){
-				for(var i in obj.f){
-					obj.head.appendChild(obj.f[i]);
+		var arr2=[];
+		
+		obj.success=(function (obj){
+			return function(func){
+				obj.nxt = $ldjs._load([],0);
+				obj.clbs = func;
+				return obj.nxt;
+			}
+		})(obj);
+		
+		obj.load=(function (obj){
+			return function(arr){
+				obj.nxt = $ldjs._load(arr,0);
+				return obj.nxt;
+			}
+		})(obj);
+		
+		/*
+			Запускает загрузку следующих файлов в цепочке
+		*/
+		obj.execute=(function (obj){
+			return function(){
+				if (obj.count > 0){
+					for(var i in obj.f){
+						obj.head.appendChild(obj.f[i]);
+					}
+				}
+				else{
+					obj.ald();
 				}
 			}
-			else{
-				obj.ald();
+		})(obj);
+		
+		obj.ald = (function(obj){
+			return function(){
+				/* 
+					Эта функция вызовется, когда весь arr будет загружен.
+					Она должна запустить следующий load
+				*/
+				if (obj.clbs != null) obj.clbs();
+				if (obj.nxt != null) if(obj.nxt.execute != null) obj.nxt.execute(); // Запустить следующую цепочку
 			}
+		})(obj);
+		
+		if (runExecute == 2){
+			var flag = true;
+			for (var i in arr){
+				var url = arr[i];
+				var url2 = url.split('?').shift();
+				arr2.push(url2);
+				if (typeof $ldjs.st[url2] != 'undefined'){
+					if ($ldjs.st[url2] == 2)
+						continue;
+				}
+				flag = false;
+			}
+			if (!flag){
+				$ldjs.cl.unshift({
+					obj:obj,
+					arr:arr2,
+				});
+			}
+			else{
+				setTimeout(
+					(function(obj){
+						return function(){
+							obj.ald();
+						}
+					})(obj), 
+					1
+				);
+			}
+			return obj;
 		}
-	})(obj);
-	
-	obj.ald = (function(obj){
-		return function(){
-			/* 
-				Эта функция вызовется, когда весь arr будет загружен.
-				Она должна запустить следующий load
-			*/
-			if (obj.clbs != null) obj.clbs();
-			if (obj.nxt != null) if(obj.nxt.execute != null) obj.nxt.execute(); // Запустить следующую цепочку
-		}
-	})(obj);
-	
-	if (runExecute == 2){
-		var flag = true;
+		
 		for (var i in arr){
 			var url = arr[i];
-			var url2 = url.split('?').shift();
-			arr2.push(url2);
+			var url2 = url.split('?').shift()
+			
 			if (typeof $ldjs.st[url2] != 'undefined'){
-				if ($ldjs.st[url2] == 2)
-					continue;
+				continue;
 			}
-			flag = false;
+			
+			var ext = url.split('.').pop();
+			ext = ext.split('?').shift();
+			var f=null;
+			if (ext == 'js'){
+				f = document.createElement('script');
+				f.type = 'text/javascript';
+				f.src = url;	
+				obj.count++;
+			}
+			else if (ext == 'css'){
+				f=document.createElement("link");
+				f.setAttribute("rel", "stylesheet");
+				f.setAttribute("type", "text/css");
+				f.setAttribute("href", url);			
+				obj.count++;
+			}
+			if (f){
+				f.onload = (function(url,status){
+					return function(){
+						if (status == 'success'){
+							$ldjs.onLdd(url); // Вызываем функцию успешной загрузки скрипта
+						}
+					};
+				})(url,'success');
+				
+				f.onerror = (function(url,status){
+					return function(){
+					};
+				})(url,'error');
+				
+				obj.f.push(f);
+				
+				$ldjs.st[url2]=1;
+				arr2.push(url2);
+			}
 		}
-		if (!flag){
+		
+		if (obj.count > 0){
 			$ldjs.cl.unshift({
 				obj:obj,
 				arr:arr2,
 			});
 		}
-		else{
-			setTimeout(
-				(function(obj){
-					return function(){
-						obj.ald();
-					}
-				})(obj), 
-				1
-			);
-		}
-		return obj;
-	}
-	
-	for (var i in arr){
-		var url = arr[i];
-		var url2 = url.split('?').shift()
-		
-		if (typeof $ldjs.st[url2] != 'undefined'){
-			continue;
-		}
-		
-		var ext = url.split('.').pop();
-		ext = ext.split('?').shift();
-		var f=null;
-		if (ext == 'js'){
-			f = document.createElement('script');
-			f.type = 'text/javascript';
-			f.src = url;	
-			obj.count++;
-		}
-		else if (ext == 'css'){
-			f=document.createElement("link");
-			f.setAttribute("rel", "stylesheet");
-			f.setAttribute("type", "text/css");
-			f.setAttribute("href", url);			
-			obj.count++;
-		}
-		if (f){
-			f.onload = (function(url,status){
+		if (runExecute == 1){
+			function bindExec(obj){
 				return function(){
-					if (status == 'success'){
-						$ldjs.onLdd(url); // Вызываем функцию успешной загрузки скрипта
-					}
-				};
-			})(url,'success');
-			
-			f.onerror = (function(url,status){
-				return function(){
-				};
-			})(url,'error');
-			
-			obj.f.push(f);
-			
-			$ldjs.st[url2]=1;
-			arr2.push(url2);
-		}
-	}
-	
-	if (obj.count > 0){
-		$ldjs.cl.unshift({
-			obj:obj,
-			arr:arr2,
-		});
-	}
-	if (runExecute == 1){
-		function bindExec(obj){
-			return function(){
-				obj.execute();
+					obj.execute();
+				}
 			}
+			setTimeout(bindExec(obj), 1);
 		}
-		setTimeout(bindExec(obj), 1);
-	}
+		
+		return obj;
+	},
 	
-	return obj;
-}		
+	onLoad: function(arr){
+		return $ldjs._load(arr, 2);
+	},
+	
+	load: function(arr, deliver){
+		return (function (arr, deliver){
+			if (typeof deliver == 'undefined') return $ldjs._load(arr);
+			return $ldjs._load(arr).success(function(){ $ldjs.deliver(deliver); });
+		})(arr, deliver);
+	},
+	
+};
 function onJQueryLoad(func){$ldjs.subscribe('jquery_loaded', func);}
 function onScriptsLoad(func){$ldjs.subscribe('scripts_loaded', func);}
 function onDocumentLoad(func){$ldjs.subscribe('document_loaded', func);}
