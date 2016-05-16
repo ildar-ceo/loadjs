@@ -296,10 +296,13 @@ var $ldjs={
 		return obj;
 	},
 	
+	// Возникает, когда загружены ресурсы в arr
 	onLoad: function(arr){
 		return $ldjs._load(arr, 2);
 	},
 	
+	// Загружаем arr и отправляем событие deliver
+	// Также можно вызывать после этого функцию .success(function(){  ...  })
 	load: function(arr, deliver){
 		return (function (arr, deliver){
 			if (typeof deliver == 'undefined') return $ldjs._load(arr);
@@ -307,6 +310,14 @@ var $ldjs={
 		})(arr, deliver);
 	},
 	
+	// При возникновении события subscribe загружаем arr и отправляем событие deliver
+	sload: function(subscribe, arr, deliver){
+		$ldjs.subscribe(subscribe, (function (arr, deliver){
+			return function(){
+				$ldjs.load(arr, deliver);
+			}
+		})(arr, deliver));
+	},
 };
 function onJQueryLoad(func){$ldjs.subscribe('jquery_loaded', func);}
 function onScriptsLoad(func){$ldjs.subscribe('scripts_loaded', func);}
