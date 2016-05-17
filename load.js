@@ -69,71 +69,7 @@ var $ldjs={
 		}
 	},
 	
-	/*
-		Объект с событиями и callback функциями
-	*/
-	ev:{},
-	
-	/*
-		Таблица состояний
-	*/
-	ev_st:{},
-	
-	/*
-		Функция, подписывающее на событие
-	*/
-	subscribe: function(event, func){
-		var arr = event;
-		if (typeof event == 'string'){
-			arr = event.split(',');
-		}
-		var flag = true;
-		for (var i=0;i<arr.length;i++){
-			var x = arr[i];
-			if (typeof $ldjs.ev_st[x] == 'undefined'){flag = false; break;}
-			if ($ldjs.ev_st[x] != 1){flag = false; break;}
-		}
-		if (flag){
-			func();
-		}
-		else{
-			if (typeof event == 'array' || typeof event == 'object') event = event.join(',');
-			if (typeof $ldjs.ev[event] == 'undefined') $ldjs.ev[event] = [];
-			$ldjs.ev[event].push(func);
-		}
-	},
-	
-	/*
-		Функция, callback для события
-	*/
-	deliver: function(event, params){
-		if (typeof $ldjs.ev_st[event] != 'undefined')
-			if ($ldjs.ev_st[event] == 1)
-				return;
-		if ($ldjs.debug >= 1) console.log('[deliver] ' + event);
-		$ldjs.ev_st[event] = 1;
-		for (var z in $ldjs.ev){
-			var arr = z.split(',');
-			var flag = true;
-			for (var i=0;i<arr.length;i++){
-				var x = arr[i];
-				if (typeof $ldjs.ev_st[x] == 'undefined'){flag = false; break;}
-				if ($ldjs.ev_st[x] != 1){flag = false; break;}
-			}
-			if (flag && arr.indexOf(event) != -1){
-				for (var i in $ldjs.ev[z]){
-					$ldjs.ev[z][i](params);
-				}
-			}
-		}
-	},
-	
-	deliver_forced: function(event, params){
-		$ldjs.ev_st[event] = 0;
-		$ldjs.deliver(event, params);
-		$ldjs.ev_st[event] = 0;
-	},
-	
+	// Функция асинхронной загрузки
 	_load: function (arr, runExecute){
 		/*
 			runExecute
@@ -318,6 +254,113 @@ var $ldjs={
 			}
 		})(arr, deliver));
 	},
+	
+	
+	/* ----------------------------------- */
+	/*        subscribe & deliver          */
+	/* ----------------------------------- */
+	
+	/*
+		Объект с событиями и callback функциями
+		Ключи объекта - события. Если событий много, то они разделенными запятой. Ключ всегда строка
+		Значение - массив функций, которые нужно выполнить
+	*/
+	ev:{},
+	
+	/*
+		Таблица состояний
+		Ключ - событие, одно без запятых
+		Значение 1 или 0. 
+			1 - событие произошло
+			0 - еще не произошло
+		Если события нет в таблице состояний, то оно не произошло
+	*/
+	ev_st:{},
+	
+	/*
+		Функция, подписывающее на событие
+	*/
+	subscribe: function(event, func){
+		// Конвертируем массив в строку
+		var arr = event;
+		if (typeof event == 'string'){
+			arr = event.split(',');
+		}
+		
+		// Проверяем, все события, объявленные в event произошли?
+		var flag = true;
+		for (var i=0;i<arr.length;i++){
+			var x = arr[i];
+			if (typeof $ldjs.ev_st[x] == 'undefined'){flag = false; break;}
+			if ($ldjs.ev_st[x] != 1){flag = false; break;}
+		}
+		
+		// Если все события произошли то запускаем сразу функцию
+		if (flag){
+			func();
+		}
+		
+		// Иначе добавляем в массив $ldjs.ev
+		else{
+			if (typeof event == 'array' || typeof event == 'object') event = event.join(',');
+			if (typeof $ldjs.ev[event] == 'undefined') $ldjs.ev[event] = [];
+			$ldjs.ev[event].push(func);
+		}
+	},
+	
+	/*
+		Функция, callback для события
+	*/
+	_deliver: function(event, params){
+		
+		// Проверяем, если событие уже раньше возникало, тогда обработчик не запускаем
+		if (typeof $ldjs.ev_st[event] != 'undefined')
+			if ($ldjs.ev_st[event] == 1)
+				return;
+				
+		// Устанавливаем флаг, событие произошло
+		if ($ldjs.debug >= 1) console.log('[deliver] ' + event);
+		$ldjs.ev_st[event] = 1;
+		
+		// Проходим по всем подпискам на события
+		// Подписка хранится ввиде строки, разделенная запятыми
+		for (var z in $ldjs.ev){
+			var arr = z.split(',');
+			
+			// Проверяем произошло ли событие
+			// Т.е. в таблице состояний ev_st у всех событий должно быть 1
+			var flag = true;
+			for (var i=0;i<arr.length;i++){
+				var x = arr[i];
+				if (typeof $ldjs.ev_st[x] == 'undefined'){flag = false; break;}
+				if ($ldjs.ev_st[x] != 1){flag = false; break;}
+			}
+			
+			// Если все состояния установлены, то выполнить callback
+			if (flag && arr.indexOf(event) != -1){
+				for (var i in $ldjs.ev[z]){
+					$ldjs.ev[z][i](params);
+				}
+			}
+		}
+	},
+	
+	// Отправляем событие
+	deliver: function(event, params){
+		setTimeout((function(event, params){
+			return function(){
+				$ldjs._deliver(event, params);
+			}
+		})(event, params), 1);
+	},
+	
+	// Повторно отправляем событие
+	deliver_forced: function(event, params){
+		$ldjs.ev_st[event] = 0;
+		$ldjs.deliver(event, params);
+		$ldjs.ev_st[event] = 0;
+	},
+	
 };
 function onJQueryLoad(func){$ldjs.subscribe('jquery_loaded', func);}
 function onScriptsLoad(func){$ldjs.subscribe('scripts_loaded', func);}
