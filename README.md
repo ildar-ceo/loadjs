@@ -227,9 +227,12 @@ $ldjs.alias('jquery', '/assets/jquery/jquery.js?_=2', true);
 
 Начать прогрузку всех ресурсов, указаных в angular_require
 
-# Готовые функции
+# Рекомендации
 
-Функции alias и load могут быть находиться вместе, так и в разных частях страницы. Главное сначала должен быть вызов alias, который объявляет синоним, затем load, который осуществляет загрузку. Можно синонимами не пользоваться вообще.
+Рекомендуется использовать для загрузки ресурсов связку alias + load. 
+Функции alias и load могут быть находиться вместе, так и в разных частях страницы. Главное сначала должен быть вызов alias, который объявляет синоним, затем load, который осуществляет загрузку. При этом с помощью alias_forced вы можете переопределить alias.
+
+При использовании данного способа библиотеки будут асинхронно загружены с учетом зависимостей. Также можно будет переопределить синонимы на свои.
 
 ## Асинхронная загрузка Яндекс карт
 ```javscript
@@ -242,4 +245,80 @@ $ldjs.load('yamap', 'yamap_loaded', 'js');
 ```javascript
 $ldjs.alias('jquery_mfp', ['/assets/mfp/magnific-popup.css','/assets/mfp/jquery.magnific-popup.js',]);
 $ldjs.sload('jquery_loaded', 'jquery_mfp', 'jquery_mfp_loaded');
+```
+
+## Асинхронная загрузка Bootstrap
+
+```javascript
+$ldjs.alias('bootstrapjs', '/assets/bootstrap/js/bootstrap.min.js');
+$ldjs.sload('jquery_loaded', 'bootstrapjs', 'bootstrapjs_loaded');
+```
+
+## Асинхронная загрузка Bootstrap datepicker с локализацией
+
+```javascript
+$ldjs.alias('bootstrap_datepicker', ['/assets/bootstrap-datepicker/js/bootstrap-datepicker.js',
+'/assets/bootstrap-datepicker/css/bootstrap-datepicker.css']);
+$ldjs.alias('bootstrap_datepicker_lang', '/assets/bootstrap-datepicker/locales/bootstrap-datepicker.ru.min.js');
+
+$ldjs.subscribe('bootstrapjs_loaded', function(){
+    // Загрузка Bootstrap datepicker
+    $ldjs.load('bootstrap_datepicker').load('bootstrap_datepicker_lang', 'bootstrap_datepicker_loaded');
+});
+```
+
+## Асинхронная загрузка CKeditor
+
+```javascript
+$ldjs.alias('ckeditor', '/assets/ckeditor/ckeditor.js');
+$ldjs.sload('jquery_loaded', 'ckeditor', 'ckeditor_loaded');
+```
+
+## Асинхронная загрузка JQuery inputmask
+
+```javascript
+$ldjs.alias('jquery_inputmask', '/assets/jquery/jquery.inputmask.js');
+$ldjs.sload('jquery_loaded', 'jquery_inputmask', 'jquery_inputmask_loaded');
+```
+
+## Асинхронная загрузка JQuery Noty
+
+```javascript
+$ldjs.alias('noty', '/assets/noty/jquery.noty.packaged.min.js');
+$ldjs.sload('jquery_loaded', 'noty', 'noty_loaded');
+```
+
+## Асинхронная загрузка Sortable
+
+```javascript
+$ldjs.alias('sortable', '/assets/sortable/Sortable.min.js');
+$ldjs.load('sortable', 'sortable_loaded');
+```
+
+## Асинхронная загрузка JQuery Form
+
+```javascript
+$ldjs.alias('jquery_form', '/assets/jquery/jquery.form.js');
+$ldjs.sload('jquery_loaded', 'jquery_form', 'jquery_form_loaded');
+```
+
+## Асинхронная загрузка JQuery UI
+
+```javascript
+$ldjs.alias('jquery_ui', ['/assets/jquery-ui/jquery-ui.min.js','/assets/jquery-ui/jquery-ui.min.css',]);
+$ldjs.sload('jquery_loaded', 'jquery_ui', 'jquery_ui_loaded');
+```
+
+## Асинхронная загрузка JQuery File Upload
+
+```javascript
+$ldjs.alias('jquery_file_upload', '/assets/jquery-file-upload/js/jquery.fileupload.js');
+$ldjs.sload('jquery_ui_loaded', 'jquery_file_upload', 'jquery_file_upload_loaded');
+```
+
+## Асинхронная загрузка Fancytree
+
+```javascript
+$ldjs.alias('jquery_fancytree', ['/assets/jquery-fancytree/jquery.fancytree-all.min.js', '/assets/jquery-fancytree/skin-win8/ui.fancytree.min.css']);
+$ldjs.sload('jquery_ui_loaded', 'jquery_fancytree', 'jquery_fancytree_loaded');
 ```
