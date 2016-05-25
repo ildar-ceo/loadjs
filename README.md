@@ -1,7 +1,7 @@
 # Асинхронная загрузка Javascript и CSS файлов
 
 ## Пример 1. Загрузка Jquery
-```
+```javascript
 // Объявляем синонимы
 $ldjs.alias('jquery', ['/assets/jquery/jquery.all.js']);
 $ldjs.alias('jquery_inputmask', ['/assets/jquery/jquery.inputmask.js',]);
@@ -33,7 +33,7 @@ $ldjs.subscribe(['scripts_loaded', 'mfp_loaded', 'jquery_inputmask_loaded'], fun
 ```
 
 ## Пример 2. Загрузка Angular
-```
+```javascript
 // Загрузка JQuery Noty
 $ldjs.sload('jquery_loaded', ['/assets/noty/jquery.noty.packaged.min.js'], 'noty_loaded');
 
