@@ -33,24 +33,48 @@ $ldjs.subscribe(['scripts_loaded', 'mfp_loaded', 'jquery_inputmask_loaded'], fun
 ```
 
 ## Пример 2. Асинхронная загрузка Angular
-```javascript
-// Загрузка JQuery Noty
-$ldjs.sload('jquery_loaded', ['/assets/noty/jquery.noty.packaged.min.js'], 'noty_loaded');
+```html
+<html>
+<head>
 
-// Определяем зависимости angular
-angular_subscribe([
-    'noty_loaded',
-]);
-angular_require([
-    // Мои js
-    '/assets/style1.css', 
-    '/assets/script1.js',
-    
-    // Подключаем библиотеки Angular
-    [ 'ngResource', ['/assets/angular-resource/angular-resource.min.js',] ],
-]);
-// Загружаем angularJs
-angular_load();
+<!-- Можно исходный код скриптов loadjs прописать прямо на странице -->
+<script src='/assets/load.min.js'>
+<script src='/assets/angular.load.min.js'>
+
+<script>
+	$ldjs.alias('jquery', ['/assets/jquery/jquery.all.js']);
+	$ldjs.alias('noty', '/assets/noty/jquery.noty.packaged.min.js');
+	$ldjs.alias('angular-resource', ['/assets/angular-resource/angular-resource.min.js']);
+	$ldjs.alias('angular-app', ['/assets/myCtrl.css', '/assets/myCtrl.js']);
+	$ldjs_ng.min = '/assets/angular/angular.min.js';
+	
+	// Загрузка JQuery Noty
+	$ldjs.sload('jquery_loaded', 'noty', 'noty_loaded');
+
+	// Определяем зависимости angular
+	angular_subscribe([
+		'noty_loaded',
+	]);
+	angular_require([
+		// Скрипты для angular приложения
+		'angular-app',
+
+		// Подключаем сторонние библиотеки Angular
+		[ 'ngResource', 'angular-resource' ],
+	]);
+	// Загружаем angularJs
+	angular_load();
+
+</script>
+
+</head>
+<body>
+
+	<div ng-controller='myCtrl'>
+	</div>
+
+</body>
+</html>
 ```
 
 # Описание функций
@@ -240,13 +264,6 @@ $ldjs.alias('yamap', 'https://api-maps.yandex.ru/2.1/?lang=ru_RU');
 $ldjs.load('yamap', 'yamap_loaded', 'js');
 ```
 
-## Асинхронная загрузка Magnific Popup
-
-```javascript
-$ldjs.alias('jquery_mfp', ['/assets/mfp/magnific-popup.css','/assets/mfp/jquery.magnific-popup.js',]);
-$ldjs.sload('jquery_loaded', 'jquery_mfp', 'jquery_mfp_loaded');
-```
-
 ## Асинхронная загрузка Bootstrap
 
 ```javascript
@@ -274,6 +291,13 @@ $ldjs.alias('ckeditor', '/assets/ckeditor/ckeditor.js');
 $ldjs.sload('jquery_loaded', 'ckeditor', 'ckeditor_loaded');
 ```
 
+## Асинхронная загрузка Fancytree
+
+```javascript
+$ldjs.alias('jquery_fancytree', ['/assets/jquery-fancytree/jquery.fancytree-all.min.js', '/assets/jquery-fancytree/skin-win8/ui.fancytree.min.css']);
+$ldjs.sload('jquery_ui_loaded', 'jquery_fancytree', 'jquery_fancytree_loaded');
+```
+
 ## Асинхронная загрузка JQuery inputmask
 
 ```javascript
@@ -286,6 +310,13 @@ $ldjs.sload('jquery_loaded', 'jquery_inputmask', 'jquery_inputmask_loaded');
 ```javascript
 $ldjs.alias('noty', '/assets/noty/jquery.noty.packaged.min.js');
 $ldjs.sload('jquery_loaded', 'noty', 'noty_loaded');
+```
+
+## Асинхронная загрузка Magnific Popup
+
+```javascript
+$ldjs.alias('jquery_mfp', ['/assets/mfp/magnific-popup.css','/assets/mfp/jquery.magnific-popup.js',]);
+$ldjs.sload('jquery_loaded', 'jquery_mfp', 'jquery_mfp_loaded');
 ```
 
 ## Асинхронная загрузка Sortable
@@ -314,11 +345,4 @@ $ldjs.sload('jquery_loaded', 'jquery_ui', 'jquery_ui_loaded');
 ```javascript
 $ldjs.alias('jquery_file_upload', '/assets/jquery-file-upload/js/jquery.fileupload.js');
 $ldjs.sload('jquery_ui_loaded', 'jquery_file_upload', 'jquery_file_upload_loaded');
-```
-
-## Асинхронная загрузка Fancytree
-
-```javascript
-$ldjs.alias('jquery_fancytree', ['/assets/jquery-fancytree/jquery.fancytree-all.min.js', '/assets/jquery-fancytree/skin-win8/ui.fancytree.min.css']);
-$ldjs.sload('jquery_ui_loaded', 'jquery_fancytree', 'jquery_fancytree_loaded');
 ```
