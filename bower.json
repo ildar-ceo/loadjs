@@ -1,6 +1,6 @@
 {
   "name": "ldjs",
-  "version": "1.2",
+  "version": "1.2.1",
   "license": "MIT",
   "authors": [
     "Ildar Bikmamatov <vistoyn@gmail.com>"
@@ -8,7 +8,9 @@
   "homepage": "https://github.com/vistoyn/loadjs",
   "description": "Asyn loader Javascript and CSS files",
   "main": [
+    "load.js",
     "load.min.js",
+    "angular.load.js",
     "angular.load.min.js"
   ],
   "repository": {
