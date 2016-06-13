@@ -38,8 +38,8 @@ $ldjs.subscribe(['scripts_loaded', 'mfp_loaded', 'jquery_inputmask_loaded'], fun
 <head>
 
 <!-- Можно исходный код скриптов loadjs прописать прямо на странице -->
-<script src='/assets/load.min.js'>
-<script src='/assets/angular.load.min.js'>
+<script src='/assets/load.min.js'></script>
+<script src='/assets/angular.load.min.js'></script>
 
 <script>
 	$ldjs.alias('jquery', ['/assets/jquery/jquery.all.js']);
