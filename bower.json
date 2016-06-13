@@ -1,1 +1,28 @@
-{  "name": "ldjs",  "version": "1.2",  "license": "MIT",  "authors": [    "Ildar Bikmamatov <vistoyn@gmail.com>"  ],  "homepage": "https://github.com/vistoyn/loadjs",  "description": "Asyn loader Javascript and CSS files",  "main": [    "load.min.js",    "angular.load.min.js"  ],  "repository": {    "type": "git",    "url": "https://github.com/vistoyn/loadjs"  },  "keywords": [    "async loader",    "dependency manager"  ],  "dependencies": {  },  "ignore": [    "bin",    "compress.sh",  ]}
+{
+  "name": "ldjs",
+  "version": "1.2",
+  "license": "MIT",
+  "authors": [
+    "Ildar Bikmamatov <vistoyn@gmail.com>"
+  ],
+  "homepage": "https://github.com/vistoyn/loadjs",
+  "description": "Asyn loader Javascript and CSS files",
+  "main": [
+    "load.min.js",
+    "angular.load.min.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vistoyn/loadjs"
+  },
+  "keywords": [
+    "async loader",
+    "dependency manager"
+  ],
+  "dependencies": {
+  },
+  "ignore": [
+    "bin",
+    "compress.sh"
+  ]
+}
