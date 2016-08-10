@@ -160,7 +160,7 @@ var $ldjs={
 		*/
 		obj.ald = (function(obj){
 			return function(){
-				if (obj.clbs != null) obj.clbs();
+				if (obj.clbs != null) setTimeout(obj.clbs,1);
 				if (obj.nxt != null) if(obj.nxt.execute != null) obj.nxt.execute(); // Запустить следующую цепочку
 			}
 		})(obj);
