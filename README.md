@@ -1,32 +1,6 @@
 # Async loader JS and CSS files
 
 
-# Load Jquery
-
-```javascript
-
-$load(['/assets/jquery/dist/jquery.min.js']).load(['/assets/jquery-migrate/jquery-migrate.min.js'])
-.success(function(){	
-	$load.deliver('jquery_loaded');
-});
-
-```
-
-
-# Load Jquery Plugins
-
-```javascript
-$ldjs.subscribe('jquery_loaded', function(){
-	
-	// jquery.inputmask
-	$load(['/assets/jquery.inputmask/dist/min/inputmask/inputmask.min.js', 'jquery_inputmask_loaded']);
-});
-
-```
-
-
-# Description
-
 ## $load(arr, message, deftype)
 
 Async load js and css files from arr
@@ -136,5 +110,31 @@ $load('jquery', 'jquery_loaded')
 // Load jquery plugins after jquery load
 $load.sload('jquery_loaded', 'jquery_ui', 'jquery_ui_loaded');
 $load.sload('jquery_loaded', 'jquery_form', 'jquery_form_loaded');
+
+```
+
+
+# Examples
+
+## Load Jquery
+
+```javascript
+
+$load(['/assets/jquery/dist/jquery.min.js']).load(['/assets/jquery-migrate/jquery-migrate.min.js'])
+.success(function(){	
+	$load.deliver('jquery_loaded');
+});
+
+```
+
+
+## Load Jquery Plugins
+
+```javascript
+$ldjs.subscribe('jquery_loaded', function(){
+	
+	// jquery.inputmask
+	$load(['/assets/jquery.inputmask/dist/min/inputmask/inputmask.min.js', 'jquery_inputmask_loaded']);
+});
 
 ```
