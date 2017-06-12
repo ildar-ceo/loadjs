@@ -494,6 +494,6 @@ Object.assign( $load, {
 });
 $load.ev_u.log = false;
 document.addEventListener("DOMContentLoaded", function(){ $load.deliver('dom_ready');});
-function onJQueryLoad(func){$load.subscribe('jquery_loaded', func);}
-function onScriptsLoad(func){$load.subscribe('scripts_loaded', func);}
-function onDocumentLoad(func){$load.subscribe('document_loaded', func);}
+function onJQueryLoaded(func){$load.subscribe('jquery_loaded', func);}
+function onScriptsLoaded(func){$load.subscribe('scripts_loaded', func);}
+function onDocumentLoaded(func){$load.subscribe('document_loaded', func);}
