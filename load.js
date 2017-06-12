@@ -235,11 +235,17 @@ Object.assign( $loadObj.prototype, {
 	 * @param {string} m - Сообщение, которое нужно отправить
 	 */	
 	deliver: function(m){
-		this.success((function(m){
-			return function(){
-				$load.deliver(m);
-			}
-		})(m));
+		
+		if (this.m == null)
+			this.m = m;
+		
+		else
+			this.success((function(m){
+				return function(){
+					$load.deliver(m);
+				}
+			})(m));
+			
 		return this;
 	},
 	
@@ -460,7 +466,7 @@ Object.assign( $load, {
 			}
 		}
 		
-		var o = new $loadObj(m);
+		var o = new $loadObj();
 		o.a = a;
 		o.m = m;
 		o.dft = dft;
