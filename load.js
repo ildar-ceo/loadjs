@@ -240,6 +240,7 @@ Object.assign( $loadObj.prototype, {
 				$load.deliver(m);
 			}
 		})(m));
+		return this;
 	},
 	
 	
@@ -487,6 +488,6 @@ Object.assign( $load, {
 });
 $load.ev_u.log = false;
 document.addEventListener("DOMContentLoaded", function(){ $load.deliver('dom_ready');});
-function onJQueryLoad(func){$ldjs.subscribe('jquery_loaded', func);}
-function onScriptsLoad(func){$ldjs.subscribe('scripts_loaded', func);}
-function onDocumentLoad(func){$ldjs.subscribe('document_loaded', func);}
+function onJQueryLoad(func){$load.subscribe('jquery_loaded', func);}
+function onScriptsLoad(func){$load.subscribe('scripts_loaded', func);}
+function onDocumentLoad(func){$load.subscribe('document_loaded', func);}
