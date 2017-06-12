@@ -5,7 +5,6 @@
 * Licensed under the MIT license (http://www.opensource.org/licenses/mit-license.php)
 * Version: 3.0
 */
-
 function $loadEvent(){
 	
 	Object.assign(this,{
@@ -55,7 +54,7 @@ Object.assign( $loadEvent.prototype, {
 	 * Проверяет произошли ли события m
 	 * @param {string|array} m - события
 	 */
-	ismj: function(m, f){
+	ismj: function(m){
 		if (typeof m == 'string') m=[m];
 		for (var i = 0, sz = m.length; i < sz; i++){
 			if (!this.ism(m[i])){
@@ -78,25 +77,25 @@ Object.assign( $loadEvent.prototype, {
 		
 		this.st[m] = 1;
 		
+		ms = Date.now() - this.tk;
+		
+		// Выводим сообщение о доставке, если silent = false
+		if(lg && db >= 1)
+			console.log('[deliver] ' + ((db == 2) ? (ms + 'ms - '): '') + m);
+		
+		
 		// Вызываем обработчики события
 		setTimeout((function(m, o){
 			return function(){
 				o.ev.dispatchEvent(new Event(m));
 			}
 		})(m, this), 1);
-		
-		
-		ms = Date.now() - this.tk;
-		
-		// Выводим сообщение о доставке, если silent = false
-		if(lg && db >= 1)
-			console.log('[deliver] ' + ((db == 2) ? (ms + 'ms - '): '') + m);
 	},
 	
 	
 	
 	/**
-	 * Выполнить при возникновении всех событий m функцию f
+	 * Выполнить при возникновении всех событий m функцию clb
 	 * @param {string|array} m - Сообщение, на которое нужно подписаться
 	 * @param {callable} clb - Функция
 	 */
@@ -121,7 +120,7 @@ Object.assign( $loadEvent.prototype, {
 		
 		// Если все события произошли, тогда запускаем функцию clb()
 		if (f)
-			clb();
+			setTimeout(clb, 1);
 	},
 	
 	
@@ -161,37 +160,25 @@ function $loadObj(){
 		 */
 		af: [],
 		
+		
+		/**
+		 * Флаг была ли обработана цепочка или нет
+		 */
+		st: 0,
 	});
 	
 }
 
 Object.assign( $loadObj.prototype, {
 	
-	/**
-	 * Инициализация
-	 */
-	init: function(){
-		$l = $load;
-		
-		if (this.m == null){
-			this.m = 'msg_' + $l.inc + '_loaded';
-			$l.inc++;
-			this.log = false;
-		}
-		
-		if (this.a.length > 0)
-			$l.ev_u._s(this.a, (function(o){
-				return function(){
-					o.ld();
-				}
-			})(this));
-	},
-	
 	
 	/**
 	 * Если были загружены все url
 	 */
 	ld: function(){
+		if (this.st) return;
+		this.st = 1;
+		
 		if (this.m != null)
 			$load.ev_m._d(this.m, this.log);
 		
@@ -206,16 +193,16 @@ Object.assign( $loadObj.prototype, {
 	 * Загрузка следующей партии
 	 */
 	load: function(arr, m, d){
-		var o = $load(arr, m, d, 0);
+		var obj = $load(arr, m, d, 0);
 		
-		/* Выполняем this.run(), загрузку следующих ресурсов из массива a */
-		this.success((function(o){
+		/* Выполняем obj.run(), загрузку следующих ресурсов из массива arr */
+		this.success((function(obj){
 			return function(){
-				o.run();
+				obj.run();
 			}
-		})(o));
+		})(obj));
 		
-		return o;
+		return obj;
 	},
 	
 	
@@ -255,8 +242,22 @@ Object.assign( $loadObj.prototype, {
 	 * Запускает загрузку ресурсов, указанных в this.a
 	 */
 	run: function(){
+		if (this.st) return;
+		$l = $load;
+		
+		if (this.a.length == 0 || $l.ev_u.ismj(this.a)){
+			this.ld();
+			return;
+		}
+		else{
+			$l.ev_u._s(this.a, (function(obj){
+				return function(){
+					obj.ld();
+				}
+			})(this));
+		}
+		
 		var rr=[];
-		var $l = $load;
 		var dft = this.dft;
 		for (var i = 0, sz = this.a.length; i < sz; i++){
 			
@@ -388,7 +389,6 @@ Object.assign( $load, {
 	 */
 	subscribe: function(m, f){
 		var obj = new $loadObj();
-		obj.init();
 		
 		if (this.is(f))
 			obj.success(f);
@@ -398,9 +398,9 @@ Object.assign( $load, {
 		 */
 		$load.ev_m._s(
 			m, 
-			(function(o){
+			(function(obj){
 				return function(){
-					o.ld();
+					obj.ld();
 				}
 			})(obj)
 		);
@@ -418,7 +418,6 @@ Object.assign( $load, {
 	 */
 	onLoad: function(u, f){
 		var obj = new $loadObj();
-		obj.init();
 		
 		if (this.is(f))
 			obj.success(f);
@@ -428,9 +427,9 @@ Object.assign( $load, {
 		 */
 		$load.ev_u._s(
 			u, 
-			(function(o){
+			(function(obj){
 				return function(){
-					o.ld();
+					obj.ld();
 				}
 			})(obj)
 		);
@@ -449,6 +448,7 @@ Object.assign( $load, {
 	 * @return loadObj
 	 */
 	load: function(a0, m, dft, t){
+		if (!this.is(m)) m = null;
 		if (!this.is(dft)) dft = 'js';
 		if (!this.is(t)) t = 1;
 		
@@ -470,10 +470,10 @@ Object.assign( $load, {
 		o.a = a;
 		o.m = m;
 		o.dft = dft;
-		o.init();
 		
-		if (t == 1)
+		if (t == 1){
 			o.run();
+		}
 		
 		return o;
 	},
