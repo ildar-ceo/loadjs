@@ -15,12 +15,12 @@ $load(['/assets/jquery/dist/jquery.min.js']).load(['/assets/jquery-migrate/jquer
 
 # Load Jquery Plugins
 
+```javascript
 $ldjs.subscribe('jquery_loaded', function(){
 	
 	// jquery.inputmask
 	$load(['/assets/jquery.inputmask/dist/min/inputmask/inputmask.min.js', 'jquery_inputmask_loaded']);
 });
-
 
 ```
 
