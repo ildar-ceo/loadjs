@@ -1,487 +1,492 @@
 /*!
-* Loadjs
+* Load JS
 * https://github.com/vistoyn/loadjs
-* Copyright (c) 2015 - 2016 Ildar Bikmamatov
+* Copyright (c) 2015 - 2017 Ildar Bikmamatov
 * Licensed under the MIT license (http://www.opensource.org/licenses/mit-license.php)
-* Version: 1.2
+* Version: 3.0
 */
-var $ldjs={
+
+function $loadEvent(){
 	
-	is: function(x){ return typeof x != 'undefined' },
+	Object.assign(this,{
+		
+		/**
+		 * Обработчик события 
+		 */
+		ev: document.createDocumentFragment(),	
+		
+		
+		/**
+		 * Начальный тик
+		 */
+		tk: Date.now(),
+		
+		
+		/**
+		 * Выводить сообщения
+		 */
+		log: true,
+		
+		
+		/**
+		 * Статус событий:
+		 *  0 - не произошло
+		 *  1 - произошло
+		 */
+		st: {
+		},
+		
+	});
 	
-	// Если не можем распознать формат загружаемого файла, то считаем что он js
-	deftype: 'js',
+}
+Object.assign( $loadEvent.prototype, {
 	
-	/*
-		Степень отладки
-			0 - ничего не выводить
-			1 - выводить deliver
-			2 - выводить deliver + load
-	*/
-	debug: 0,
 	
-	/*
-		Объект синонимов.
-		Ключи - имена
-		Значения - массивы с загружаемыми скриптами
-	*/
-	alias:{
+	/**
+	 * Проверяет произошло ли событие или нет
+	 * @param {string} m - события
+	 */
+	ism: function(m){ 
+		return $load.is( this.st[m] ) && this.st[m] == 1;
 	},
 	
-	/*
-		Статус загружаемых файлов
-		1 - грузится
-		2 - загружен
-	*/
-	st:{
+	
+	/**
+	 * Проверяет произошли ли события m
+	 * @param {string|array} m - события
+	 */
+	ismj: function(m, f){
+		if (typeof m == 'string') m=[m];
+		for (var i = 0, sz = m.length; i < sz; i++){
+			if (!this.ism(m[i])){
+				return false;
+			}
+		}
+		return true;
 	},
 	
-	/*
-		Массив Callback Функций
-		Хранятся объекты вида
-		{
-			func: function(){},
-			arr:[] - массив файлов, которые должны быть загружены, чтобы сработала func
-		}
-	*/
-	cl:[
-	],
 	
-	/*
-		Функция срабатывает, когда файл url загружен
-	*/
-	onLdd: function(url){
-		if ($ldjs.debug >= 2) console.log('[load] ' + url);
+	/**
+	 * Отправка сообщения о том что событие m произошло
+	 */
+	_d: function(m, lg){
+		if (typeof lg == 'undefined') lg = this.log;
+		var db = $load.debug;
 		
-		url = url.split('?').shift();
-		$ldjs.st[url]=2;
+		if ($load.is(this.st[m]) && this.st[m] == 1)
+			return;
 		
-		//console.log($ldjs.st);
-		//console.log($ldjs.cl);
+		this.st[m] = 1;
 		
-		// Пройдемся по Callback функциям
-		for (var i = $ldjs.cl.length -1; i >= 0 ; i--){
-			var cl = $ldjs.cl[i];
-			var flag = true;
-			for (var j in cl.arr){
-				var url2 = cl.arr[j];
-				if (!$ldjs.is($ldjs.st[url2])){ //if (typeof $ldjs.st[url2] == 'undefined'){
-					flag = false;
-					break;
-				}
-				if ($ldjs.st[url2] != 2){
-					flag = false;
-					break;
-				}
-			}
-			if (flag){
-				var obj = cl.obj;
-				$ldjs.cl.splice(i, 1);
-				obj.ald();
-			}
-		}
-	},
-	
-	// Функция асинхронной загрузки
-	_load: function (arr0, runExecute, deftype){
-		/*
-			runExecute
-			0 - не запускать загрузку файлов, подождать вызова функции nxt
-			1 - сразу запустить загрузку файлов
-			2 - отслеживать загрузку файлов и когда они загружены запустить success
-		*/
-		if (!$ldjs.is(runExecute)) runExecute = 1; //if (typeof runExecute == 'undefined') runExecute = 1;
-		if (!$ldjs.is(deftype)) deftype = $ldjs.deftype; 
-		
-		arr = [];
-		if (typeof arr0 == 'string') arr0 = [arr0];
-		
-		// Проверяем есть ли синонимы в arr0 и если это синоним, то подставляем нужный массив из $ldjs.alias
-		for (var i in arr0){
-			var url = arr0[i];
-			if ($ldjs.is($ldjs.alias[url]))
-				arr = arr.concat($ldjs.alias[url])
-			else
-				arr.push(url);
-		}
-		
-		var obj={
-			arr:arr,
-			f:[], // Массив с DOM объектами script и link
-			head:document.getElementsByTagName('head')[0] || document.documentElement,
-			count:0,
-			
-			success:null,
-			load:null,
-			execute: null,
-			
-			nxt:null, // следующий объект obj
-			clbs:null, // callback функция успешной загрузки всех файлов, эта функция передается в success
-			ald:null, // Функция, которая вызывается, когда весь массив arr загружен. Она запускает следующую цепочку
-		};
-		
-		var arr2=[];
-		
-		obj.success=(function (obj){
-			return function(func){
-				obj.nxt = $ldjs._load([],0);
-				obj.clbs = func;
-				return obj.nxt;
-			}
-		})(obj);
-		
-		obj.load=(function (obj){
-			return function(arr){
-				obj.nxt = $ldjs._load(arr,0);
-				return obj.nxt;
-			}
-		})(obj);
-		
-		/*
-			Запускает загрузку следующих файлов в цепочке
-		*/
-		obj.execute=(function (obj){
+		// Вызываем обработчики события
+		setTimeout((function(m, o){
 			return function(){
-				if (obj.count > 0){
-					for(var i in obj.f){
-						obj.head.appendChild(obj.f[i]);
+				o.ev.dispatchEvent(new Event(m));
+			}
+		})(m, this), 1);
+		
+		
+		ms = Date.now() - this.tk;
+		
+		// Выводим сообщение о доставке, если silent = false
+		if(lg && db >= 1)
+			console.log('[deliver] ' + ((db == 2) ? (ms + 'ms - '): '') + m);
+	},
+	
+	
+	
+	/**
+	 * Выполнить при возникновении всех событий m функцию f
+	 * @param {string|array} m - Сообщение, на которое нужно подписаться
+	 * @param {callable} clb - Функция
+	 */
+	_s: function(m, clb){
+		if (typeof m == 'string') m=[m];
+		var f = true;
+		
+		// Подписываемся на все события, которые не произошли
+		for (var i = 0, sz = m.length; i < sz; i++){
+			if ( !this.ism(m[i]) ){
+				
+				this.ev.addEventListener(m[i], (function(m, clb, obj){
+					return function(){
+						if (obj.ismj(m)) 
+							clb();
 					}
-				}
-				else{
-					obj.ald();
-				}
+				})(m, clb, this));
+				
+				f = false;
 			}
-		})(obj);
-		
-		/* 
-			Эта функция вызовется, когда весь arr будет загружен.
-			Она должна запустить функцию, переданную в success
-			Также запустить следующую цепочку obj.nxt
-		*/
-		obj.ald = (function(obj){
-			return function(){
-				if (obj.clbs != null) setTimeout(obj.clbs,1);
-				if (obj.nxt != null) if(obj.nxt.execute != null) obj.nxt.execute(); // Запустить следующую цепочку
-			}
-		})(obj);
-		
-		
-		// Отслеживать статус загрузки файлов, и запустить цепочку success когда файлы будут загружены
-		// Если все файлы уже запущены, то сразу запустить
-		// Запускаеться функция obj.ald
-		if (runExecute == 2){
-			var flag = true;
-			for (var i in arr){
-				var url = arr[i];
-				var url2 = url.split('?').shift();
-				arr2.push(url2);
-				if ($ldjs.is($ldjs.st[url2])){ //if (typeof $ldjs.st[url2] != 'undefined'){
-					if ($ldjs.st[url2] == 2)
-						continue;
-				}
-				flag = false;
-			}
-			if (!flag){
-				$ldjs.cl.unshift({
-					obj:obj,
-					arr:arr2,
-				});
-			}
-			else{
-				setTimeout(
-					(function(obj){
-						return function(){
-							obj.ald();
-						}
-					})(obj), 
-					1
-				);
-			}
-			return obj;
 		}
 		
-		// Формируем массив obj.f с DOM объектами script и link
-		// В head их пока не добавляем
-		for (var i in arr){
-			var url = arr[i];
-			var url2 = url.split('?').shift()
-			
-			/* 
-			Оставил, вдруг пригодиться
-			Здесь происходит удаление из url2 только get параметра _
-			Сейчас же удаляются все get параметры
-			
-			var a = url.split('?');
-			var url2 = a[0];
-			var get_params = a[1];
-			
-			// Игнорируем get параметр _. Нужен, чтобы дебажить js скрипты
-			if ($ldjs.is(get_params)){ // if (typeof get_params != 'undefined'){
-				url2 = url2 + '?';
-				var get_params_arr = get_params.split('&');
-				for (var j in get_params_arr){
-					var param = get_params_arr[j];
-					var param_arr = param.split('=');
-					
-					// проверяем get parametr
-					if (param_arr[0] != '_' && $ldjs.is(param_arr[1]))
-						url2 = url2 + param_arr[0] + "=" + param_arr[1] + '&';
+		// Если все события произошли, тогда запускаем функцию clb()
+		if (f)
+			clb();
+	},
+	
+	
+});
+
+
+function $loadObj(){
+	
+	Object.assign(this,{
+		
+		/**
+		 * Массив с загружаемыми ресурсами
+		 */
+		a: [],
+		
+		
+		/**
+		 * Сообщение, которое будет послано. Может быть null
+		 */
+		m: null,
+		
+		
+		/**
+		 * Тип по умолчанию
+		 */
+		dft: null,
+		
+		
+		/**
+		 * Отправлять сообщение 
+		 */
+		log: $load.ev_m.log,
+		
+		
+		/**
+		 * Цепочка success callback
+		 */
+		af: [],
+		
+	});
+	
+}
+
+Object.assign( $loadObj.prototype, {
+	
+	/**
+	 * Инициализация
+	 */
+	init: function(){
+		$l = $load;
+		
+		if (this.m == null){
+			this.m = 'msg_' + $l.inc + '_loaded';
+			$l.inc++;
+			this.log = false;
+		}
+		
+		if (this.a.length > 0)
+			$l.ev_u._s(this.a, (function(o){
+				return function(){
+					o.ld();
 				}
+			})(this));
+	},
+	
+	
+	/**
+	 * Если были загружены все url
+	 */
+	ld: function(){
+		if (this.m != null)
+			$load.ev_m._d(this.m, this.log);
+		
+		for (var i=0; i<this.af.length; i++){
+			setTimeout(this.af[i], 1);
+		}
+	},
+	
+	
+	
+	/**
+	 * Загрузка следующей партии
+	 */
+	load: function(arr, m, d){
+		var o = $load(arr, m, d, 0);
+		
+		/* Выполняем this.run(), загрузку следующих ресурсов из массива a */
+		this.success((function(o){
+			return function(){
+				o.run();
 			}
-			
-			// Удаляет последний символ из строки если он равен ch
-			var $del = function(str, ch){
-				var sz = str.length;
-				if (sz == 0) return str;
-				if (str[sz-1] == ch) return str.substring(0, sz - 1);
-				return str;
+		})(o));
+		
+		return o;
+	},
+	
+	
+	
+	/**
+	 * Успешная загрузка партии
+	 */
+	success: function(f){
+		this.af.push(f);
+		return this;
+	},
+	
+	
+	
+	/**
+	 * Отправляет сообщение после успешной загрузки партии ресурсов
+	 * @param {string} m - Сообщение, которое нужно отправить
+	 */	
+	deliver: function(m){
+		this.success((function(m){
+			return function(){
+				$load.deliver(m);
 			}
+		})(m));
+	},
+	
+	
+	
+	/**
+	 * Запускает загрузку ресурсов, указанных в this.a
+	 */
+	run: function(){
+		var rr=[];
+		var $l = $load;
+		var dft = this.dft;
+		for (var i = 0, sz = this.a.length; i < sz; i++){
 			
-			// Удаляем символы & и ? в конце url
-			url2 = $del(url2, '&');
-			url2 = $del(url2, '?');
-			*/
+			// Обрабатываем url
+			var u = this.a[i];
 			
 			// Если url2 уже в списке загружаемых файлов, то пропускаем url
-			if ($ldjs.is($ldjs.st[url2])){ // if (typeof $ldjs.st[url2] != 'undefined'){
+			if ($l.is($load.ev_u.st[u])){
 				continue;
 			}
 			
 			// Получаем расширение файла
-			var ext = url.split('.').pop();
-			ext = ext.split('?').shift();
-			var f=null;
+			var e = u.split('.').pop();
+			var f = null;
+			
 			
 			// Функции создания script
-			var addJs = function(obj, url){
+			var addJs = function(url){
 				f = document.createElement('script');
 				f.type = 'text/javascript';
 				f.src = url;	
-				obj.count++;
 				return f;
 			};
 			
 			// Функции создания link
-			var addCss = function(obj, url){
-				f=document.createElement("link");
-				f.setAttribute("rel", "stylesheet");
-				f.setAttribute("type", "text/css");
-				f.setAttribute("href", url);			
-				obj.count++;
+			var addCss = function(url){
+				f = document.createElement("link");
+				f.rel = "stylesheet";
+				f.type = "text/css";
+				f.href = url;		
 				return f;
 			}
 			
+			
 			// Создаем DOM объект в зависимости от расширения
-			if (ext == 'js') f=addJs(obj, url);
-			else if (ext == 'css') f=addCss(obj, url);
-			else if (deftype == 'js') f=addJs(obj, url);
-			else if (deftype == 'css') f=addCss(obj, url);
+			if (e == 'js') f=addJs(u);
+			else if (e == 'css') f=addCss(u);
+			else if (dft == 'js') f=addJs(u);
+			else if (dft == 'css') f=addCss(u);
+			
 			
 			// Если DOM объект был создан
 			if (f){
-				f.onload = (function(url,status){
+				f.onload = (function(u, o){
 					return function(){
-						if (status == 'success'){
-							$ldjs.onLdd(url); // Вызываем функцию успешной загрузки скрипта
-						}
+						$load.ev_u._d(u);
 					};
-				})(url,'success');
+				})(u, this);
 				
-				f.onerror = (function(url,status){
+				f.onerror = (function(u, o){
 					return function(){
 					};
-				})(url,'error');
+				})(u, this);
 				
-				obj.f.push(f);
-				
-				$ldjs.st[url2]=1;
-				arr2.push(url2);
+				rr.push(f);
 			}
 		}
 		
-		// Добавим в мониторинг объект obj
-		if (obj.count > 0){
-			$ldjs.cl.unshift({
-				obj:obj,
-				arr:arr2,
-			});
+		// Добавляем созданный DOM объекты в заголовок
+		for (var i = 0, sz = rr.length; i < sz; i++){
+			$l.h.appendChild(rr[i]);
 		}
+	},
+	
+});
+
+
+function $load(a0, m, d, t){
+	return $load.load(a0, m, d, t);
+}
+
+Object.assign( $load, {
+	
+	debug: 0,
+	h: document.getElementsByTagName('head')[0] || document.documentElement,
+	inc: 0,
+	
+	
+	/**
+	 * Обработчики событий
+	 */
+	ev_u: new $loadEvent(),
+	ev_m: new $loadEvent(),
+	
+	
+	/**
+	 * Проверяет x на существование
+	 */
+	is: function(x){ 
+		return (typeof x != 'undefined') && (x != null);
+	},
+	
+	
+	/**
+	 * Объект синонимов.
+	 * Ключи - имена
+	 * Значения - массивы с загружаемыми скриптами
+	 */
+	als: {},
+	
+	
+	/**
+	 * Устанавливает синоним name
+	 *
+	 * @param {string} name - Название синонима
+	 * @param {array} arr - Массив с загружаемыми ресурсами
+	 * @param {boolean} force - Массив с загружаемыми ресурсами
+	 */	
+	alias: function(name, arr, force){
+		if (!this.is(this.als[name]) || this.is(force) && force == 1)
+			this.als[name] = arr;
+	},
+	
+	
+	/**
+	 * Отправляет сообщение
+	 * @param {string} m - Сообщение, которое нужно отправить
+	 */	
+	deliver: function(m){
+		this.ev_m._d(m);
+	},
+	
+	
+	/**
+	 * Подписывается на события
+	 * @param {string|array} m - Сообщение, на которое нужно подписаться
+	 * @param {callable} f - Функция
+	 * @return loadObj
+	 */
+	subscribe: function(m, f){
+		var obj = new $loadObj();
+		obj.init();
 		
-		// Стартуем загрузку файлов, если runExecute == 1
-		if (runExecute == 1){
-			function bindExec(obj){
+		if (this.is(f))
+			obj.success(f);
+		
+		/**
+		 * Если произойдет событие m, то сразу запустим функцию obj.ld()
+		 */
+		$load.ev_m._s(
+			m, 
+			(function(o){
 				return function(){
-					obj.execute();
+					o.ld();
 				}
-			}
-			setTimeout(bindExec(obj), 1);
-		}
+			})(obj)
+		);
 		
 		return obj;
 	},
 	
-	/*
-		Функция создания синонимов name <=> arr
-		Если вам нужно переопределить значение, то передайте force = 1
-	*/
-	alias: function(name, arr, force){
-	
-		if ($ldjs.is($ldjs.alias[name]) && force != 1)
-			return;
-	
-		// Добавляем синоним. Сперва проверяем arr точно массив, если это строка, то делаем массив
-		if (typeof arr == 'string') arr = [arr];
-		$ldjs.alias[name] = arr;
-	},
 	
 	
-	// Возникает, когда загружены ресурсы в arr
-	onLoad: function(arr){
-		return $ldjs._load(arr, 2);
-	},
-	
-	// Загружаем arr и отправляем событие deliver
-	// Также можно вызывать после этого функцию .success(function(){  ...  })
-	load: function(arr, deliver, deftype){
-		return (function (arr, deliver, deftype){
-			
-			// Если доставка сообщения не определена, то просто передаем объект load
-			if (!$ldjs.is(deliver)) return $ldjs._load(arr, 1, deftype); 
-			
-			// Создаем callback с доставкой сообщения
-			return $ldjs
-				._load(arr, 1, deftype)
-				.success((function(deliver){
-					return function(){ 
-						$ldjs.deliver(deliver); 
-					}
-				})(deliver));
-		})(arr, deliver, deftype);
-	},
-	
-	// При возникновении события subscribe загружаем arr и отправляем событие deliver
-	sload: function(subscribe, arr, deliver, deftype){
-		$ldjs.subscribe(subscribe, (function (arr, deliver, deftype){
-			return function(){
-				$ldjs.load(arr, deliver, deftype);
-			}
-		})(arr, deliver, deftype));
-	},
-	
-	
-	/* ----------------------------------- */
-	/*        subscribe & deliver          */
-	/* ----------------------------------- */
-	
-	/*
-		Объект с событиями и callback функциями
-		Ключи объекта - события. Если событий много, то они разделенными запятой. Ключ всегда строка
-		Значение - массив функций, которые нужно выполнить
-	*/
-	ev:{},
-	
-	/*
-		Таблица состояний
-		Ключ - событие, одно без запятых
-		Значение 1 или 0. 
-			1 - событие произошло
-			0 - еще не произошло
-		Если события нет в таблице состояний, то оно не произошло
-	*/
-	ev_st:{},
-	
-	/*
-		Функция, подписывающее на событие
-	*/
-	subscribe: function(event, func){
-		// Конвертируем массив в строку
-		var arr = event;
-		if (typeof event == 'string'){
-			arr = event.split(',');
-		}
+	/**
+	 * Подписывается на загрузку ресурсов
+	 * @param {string|array} u - Массив ресурсов, после загрузки которых будет выполнена функция f
+	 * @param {callable} f - Функция
+	 * @return loadObj
+	 */
+	onLoad: function(u, f){
+		var obj = new $loadObj();
+		obj.init();
 		
-		// Проверяем, все события, объявленные в event произошли?
-		var flag = true;
-		for (var i=0;i<arr.length;i++){
-			var x = arr[i];
-			
-			if (!$ldjs.is($ldjs.ev_st[x])){flag = false; break;}
-			//if (typeof $ldjs.ev_st[x] == 'undefined'){flag = false; break;}
-			
-			if ($ldjs.ev_st[x] != 1){flag = false; break;}
-		}
+		if (this.is(f))
+			obj.success(f);
 		
-		// Если все события произошли то запускаем сразу функцию
-		if (flag){
-			func();
-		}
-		
-		// Иначе добавляем в массив $ldjs.ev
-		else{
-			if (typeof event == 'array' || typeof event == 'object') event = event.join(',');
-			
-			if (!$ldjs.is($ldjs.ev[event]))  $ldjs.ev[event] = [];
-			//if (typeof $ldjs.ev[event] == 'undefined') $ldjs.ev[event] = [];
-			
-			$ldjs.ev[event].push(func);
-		}
-	},
-	
-	/*
-		Функция, callback для события
-	*/
-	_deliver: function(event, params){
-		
-		// Проверяем, если событие уже раньше возникало, тогда обработчик не запускаем
-		if ($ldjs.is($ldjs.ev_st[event]) && $ldjs.ev_st[event] == 1) // if (typeof $ldjs.ev_st[event] != 'undefined')
-			return;
-				
-		// Устанавливаем флаг, событие произошло
-		if ($ldjs.debug >= 1) console.log('[deliver] ' + event);
-		$ldjs.ev_st[event] = 1;
-		
-		// Проходим по всем подпискам на события
-		// Подписка хранится ввиде строки, разделенная запятыми
-		for (var z in $ldjs.ev){
-			var arr = z.split(',');
-			
-			// Проверяем произошло ли событие
-			// Т.е. в таблице состояний ev_st у всех событий должно быть 1
-			var flag = true;
-			for (var i=0;i<arr.length;i++){
-				var x = arr[i];
-				
-				if (!$ldjs.is($ldjs.ev_st[x]) || $ldjs.ev_st[x] != 1){flag = false; break;}
-				//if (typeof $ldjs.ev_st[x] == 'undefined'){flag = false; break;}
-				//if ($ldjs.ev_st[x] != 1){flag = false; break;}
-			}
-			
-			// Если все состояния установлены, то выполнить callback
-			if (flag && arr.indexOf(event) != -1){
-				for (var i in $ldjs.ev[z]){
-					$ldjs.ev[z][i](params);
+		/**
+		 * Если загрузятся все ресурсы u, то сразу запустим функцию obj.ld()
+		 */
+		$load.ev_u._s(
+			u, 
+			(function(o){
+				return function(){
+					o.ld();
 				}
+			})(obj)
+		);
+		
+		return obj;
+	},
+	
+	
+	
+	/**
+	 * Загружает массив и отправляет сообщение
+	 * @param {array|string} arr - Массив с загружаемыми ресурсами, либо синоним
+	 * @param {string} msg - Сообщение, которое будет послано. Может быть null
+	 * @param {string} dft - Тип по умолчанию
+	 * @param {bool} type - Если 1, то запускает сразу. По умолчанию 1.
+	 * @return loadObj
+	 */
+	load: function(a0, m, dft, t){
+		if (!this.is(dft)) dft = 'js';
+		if (!this.is(t)) t = 1;
+		
+		// Новый массив с загружаемыми ресурсами, преобразованный
+		var a = [];
+		if (typeof a0 == 'string') a0 = [a0];
+		
+		// Проверяем есть ли синонимы в a0 и если это синоним, то подставляем нужный массив из alias
+		for (var i = 0, sz = a0.length; i < sz; i++){
+			var u = a0[i];
+			if (this.is(this.als[u])) a = a.concat(this.als[u]);
+			else{
+				u = u.split('?').shift();
+				a.push(u);
 			}
 		}
+		
+		var o = new $loadObj(m);
+		o.a = a;
+		o.m = m;
+		o.dft = dft;
+		o.init();
+		
+		if (t == 1)
+			o.run();
+		
+		return o;
 	},
 	
-	// Отправляем событие
-	deliver: function(event, params){
-		setTimeout((function(event, params){
-			return function(){
-				$ldjs._deliver(event, params);
-			}
-		})(event, params), 1);
+	
+	/**
+	 * Подписываемся на сообщение message1, грузим массив arr и генерируем сообщение message2
+	 *
+	 * @param {array|string} m1 - Сообщение, на которое будем подписываться
+	 * @param {array|string} a - Массив с загружаемыми ресурсами, либо синоним
+	 * @param {string} m2 - Сообщение, которое будет послано. Может быть null
+	 * @param {string} dft - Тип по умолчанию
+	 */
+	sload: function(m1, a, m2, d){
+		return $load.subscribe(m1).load(a, m2, d);
 	},
 	
-	// Повторно отправляем событие
-	deliver_forced: function(event, params){
-		$ldjs.ev_st[event] = 0;
-		$ldjs.deliver(event, params);
-		$ldjs.ev_st[event] = 0;
-	},
-	
-};
+});
+$load.ev_u.log = false;
+document.addEventListener("DOMContentLoaded", function(){ $load.deliver('dom_ready');});
 function onJQueryLoad(func){$ldjs.subscribe('jquery_loaded', func);}
 function onScriptsLoad(func){$ldjs.subscribe('scripts_loaded', func);}
 function onDocumentLoad(func){$ldjs.subscribe('document_loaded', func);}
