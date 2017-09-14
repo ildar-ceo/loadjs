@@ -95,7 +95,7 @@ Object.assign( $loadEvent.prototype, {
 	
 	
 	/**
-	 * Выполнить при возникновении всех событий m функцию clb
+	 * Выполнить при возникновении всех событий m выполнить функцию clb
 	 * @param {string|array} m - Сообщение, на которое нужно подписаться
 	 * @param {callable} clb - Функция
 	 */
@@ -134,7 +134,8 @@ function $loadObj(){
 		/**
 		 * Массив с загружаемыми ресурсами
 		 */
-		a: [],
+		u1: [],
+		u2: [],
 		
 		
 		/**
@@ -170,6 +171,19 @@ function $loadObj(){
 }
 
 Object.assign( $loadObj.prototype, {
+	
+	
+	/**
+	 * Формируем массивы u1 и u2
+	 */
+	a: function(a){
+		this.u1 = [];
+		this.u2 = [];
+		for (var i=0; i<a.length; i++){
+			this.u1.push(a[i]);
+			this.u2.push(a[i].split('?').shift());
+		}
+	},
 	
 	
 	/**
@@ -239,18 +253,18 @@ Object.assign( $loadObj.prototype, {
 	
 	
 	/**
-	 * Запускает загрузку ресурсов, указанных в this.a
+	 * Запускает загрузку ресурсов, указанных в this.u2
 	 */
 	run: function(){
 		if (this.st) return;
 		$l = $load;
 		
-		if (this.a.length == 0 || $l.ev_u.ismj(this.a)){
+		if (this.u2.length == 0 || $l.ev_u.ismj(this.u2)){
 			this.ld();
 			return;
 		}
 		else{
-			$l.ev_u._s(this.a, (function(obj){
+			$l.ev_u._s(this.u2, (function(obj){
 				return function(){
 					obj.ld();
 				}
@@ -259,18 +273,22 @@ Object.assign( $loadObj.prototype, {
 		
 		var rr=[];
 		var dft = this.dft;
-		for (var i = 0, sz = this.a.length; i < sz; i++){
+		for (var i = 0, sz = this.u2.length; i < sz; i++){
 			
 			// Обрабатываем url
-			var u = this.a[i];
+			var u1 = this.u1[i];
+			var u2 = this.u2[i];
 			
 			// Если url2 уже в списке загружаемых файлов, то пропускаем url
-			if ($l.is($load.ev_u.st[u])){
+			if ($l.is($load.ev_u.st[u2])){
 				continue;
 			}
 			
+			// Говорим что ресурс грузится
+			$load.ev_u.st[u2] = 0;
+			
 			// Получаем расширение файла
-			var e = u.split('.').pop();
+			var e = u2.split('.').pop();
 			var f = null;
 			
 			
@@ -293,24 +311,24 @@ Object.assign( $loadObj.prototype, {
 			
 			
 			// Создаем DOM объект в зависимости от расширения
-			if (e == 'js') f=addJs(u);
-			else if (e == 'css') f=addCss(u);
-			else if (dft == 'js') f=addJs(u);
-			else if (dft == 'css') f=addCss(u);
+			if (e == 'js') f=addJs(u1);
+			else if (e == 'css') f=addCss(u1);
+			else if (dft == 'js') f=addJs(u1);
+			else if (dft == 'css') f=addCss(u1);
 			
 			
 			// Если DOM объект был создан
 			if (f){
-				f.onload = (function(u, o){
+				f.onload = (function(u2, o){
 					return function(){
-						$load.ev_u._d(u);
+						$load.ev_u._d(u2);
 					};
-				})(u, this);
+				})(u2, this);
 				
-				f.onerror = (function(u, o){
+				f.onerror = (function(u2, o){
 					return function(){
 					};
-				})(u, this);
+				})(u2, this);
 				
 				rr.push(f);
 			}
@@ -347,7 +365,7 @@ Object.assign( $load, {
 	 * Проверяет x на существование
 	 */
 	is: function(x){ 
-		return (typeof x != 'undefined') && (x != null);
+		return (typeof x != 'undefined') && (x !== null);
 	},
 	
 	
@@ -461,13 +479,12 @@ Object.assign( $load, {
 			var u = a0[i];
 			if (this.is(this.als[u])) a = a.concat(this.als[u]);
 			else{
-				u = u.split('?').shift();
 				a.push(u);
 			}
 		}
 		
 		var o = new $loadObj();
-		o.a = a;
+		o.a(a);
 		o.m = m;
 		o.dft = dft;
 		
