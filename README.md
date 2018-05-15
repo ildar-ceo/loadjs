@@ -1,6 +1,18 @@
 # Async loader JS and CSS files
 
 
+## Install
+
+```
+bower install ldjs
+```
+
+Include:
+```
+<script src='/assets/ldjs/index.js'></script>
+```
+
+
 ## $load(arr, message, deftype)
 
 Async load js and css files from arr
