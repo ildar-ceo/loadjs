@@ -4,12 +4,12 @@
 ## Install
 
 ```
-bower install ldjs
+wget https://raw.githubusercontent.com/vistoyn/loadjs/master/index.js -O ldjs.js
 ```
 
 Include:
 ```
-<script src='/assets/ldjs/index.js'></script>
+<script src='ldjs.js'></script>
 ```
 
 
