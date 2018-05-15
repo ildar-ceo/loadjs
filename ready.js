@@ -1,9 +1,9 @@
 /*!
 * Load JS
 * https://github.com/vistoyn/loadjs
-* Copyright (c) 2015 - 2017 Ildar Bikmamatov
+* Copyright (c) 2016 - 2017 Ildar Bikmamatov
 * Licensed under the MIT license (http://www.opensource.org/licenses/mit-license.php)
-* Version: 3.0
+* Version: 3.2
 */
 
 ObjectAssign( $load, {

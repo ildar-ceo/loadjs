@@ -1,9 +1,9 @@
 /*!
 * Load JS
 * https://github.com/vistoyn/loadjs
-* Copyright (c) 2015 - 2018 Ildar Bikmamatov
+* Copyright (c) 2016 - 2018 Ildar Bikmamatov
 * Licensed under the MIT license (http://www.opensource.org/licenses/mit-license.php)
-* Version: 3.1
+* Version: 3.2
 */
 var ObjectAssign = function(obj){
 	for (var i = 1;i<arguments.length; i+=1){
