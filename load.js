@@ -1,13 +1,22 @@
 /*!
 * Load JS
 * https://github.com/vistoyn/loadjs
-* Copyright (c) 2015 - 2017 Ildar Bikmamatov
+* Copyright (c) 2015 - 2018 Ildar Bikmamatov
 * Licensed under the MIT license (http://www.opensource.org/licenses/mit-license.php)
-* Version: 3.0
+* Version: 3.1
 */
+var ObjectAssign = function(obj){
+	for (var i = 1;i<arguments.length; i+=1){
+		var arg = arguments[i];
+		for (var key in arg){
+			obj[key] = arg[key];
+		}
+	}
+	return obj;
+};
 function $loadEvent(){
 	
-	Object.assign(this,{
+	ObjectAssign(this, {
 		
 		/**
 		 * Обработчик события 
@@ -38,7 +47,7 @@ function $loadEvent(){
 	});
 	
 }
-Object.assign( $loadEvent.prototype, {
+ObjectAssign( $loadEvent.prototype, {
 	
 	
 	/**
@@ -129,7 +138,7 @@ Object.assign( $loadEvent.prototype, {
 
 function $loadObj(){
 	
-	Object.assign(this,{
+	ObjectAssign(this,{
 		
 		/**
 		 * Массив с загружаемыми ресурсами
@@ -170,7 +179,7 @@ function $loadObj(){
 	
 }
 
-Object.assign( $loadObj.prototype, {
+ObjectAssign( $loadObj.prototype, {
 	
 	
 	/**
@@ -347,7 +356,7 @@ function $load(a0, m, d, t){
 	return $load.load(a0, m, d, t);
 }
 
-Object.assign( $load, {
+ObjectAssign( $load, {
 	
 	debug: 0,
 	h: document.getElementsByTagName('head')[0] || document.documentElement,

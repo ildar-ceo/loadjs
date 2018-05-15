@@ -6,7 +6,7 @@
 * Version: 3.0
 */
 
-Object.assign( $load, {
+ObjectAssign( $load, {
 	
 	_rw : [],
 	
